@@ -46,19 +46,67 @@ class OutputLogPlotter:
         self.outputlog = outputlog
         return
     
-    def plot_lattice(self):
+    def plot_lattice(self, **kwargs):
         """
         Plot the lattice sites
+        
+        Parameters
+        ----------
+        simu_torus : dict [optional]
+            simulation torus, expressed in units of the Bravais lattice vectors. 
+            Must contain 2 keys, 't1' and 't2'
+        bravais_vecs : dict [optional]
+            dict with the two bravais lattice vectors (keys 'a1' and 'a2')
+        show_numbering : bool [optional][default: False]
+            if True, show the site indices
+        
         """
-        fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8))
-        for index, row in self.outputlog.df_sites.iterrows():
-            ax0.plot(row['X'], row['Y'], 
-                     marker='o', 
-                     markersize=6,
-                     color='k')
-            ax0.set_xlabel('$x$')
-            ax0.set_ylabel('$y$')
+        
+        show_numbering = kwargs.get('show_numbering', False)
+        
+        minX = self.outputlog.df_sites['X'].min()
+        maxX = self.outputlog.df_sites['X'].max()
+        minY = self.outputlog.df_sites['Y'].min()
+        maxY = self.outputlog.df_sites['Y'].max()
+        
+        fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
+        if 'simu_torus' in kwargs:
+            if not 'bravais_vecs' in kwargs:
+                raise RuntimeError('Missing Bravais lattice vectors for plotting the simulation torus.')
+            simu_torus = kwargs['simu_torus']
+            bravais_vecs = kwargs['bravais_vecs']
+            t1 = simu_torus['t1'][0] * bravais_vecs['a1'] + simu_torus['t1'][1] * bravais_vecs['a2']
+            t2 = simu_torus['t2'][0] * bravais_vecs['a1'] + simu_torus['t2'][1] * bravais_vecs['a2']
+            origin = np.array([0.0, 0.0])
+            minX = min(minX, t1[0])
+            minX = min(minX, t2[0])
+            maxX = max(maxX, t1[0])
+            maxX = max(maxX, t2[0])
+            minY = min(minY, t1[1])
+            minY = min(minY, t2[1])
+            maxY = max(maxY, t1[1])
+            maxY = max(maxY, t2[1])
+            ax0.quiver(*origin, *t1, angles='xy', scale_units='xy', scale=1, color='r')
+            ax0.quiver(*origin, *t2, angles='xy', scale_units='xy', scale=1, color='r')
+        # plot lattice points
+        ax0.scatter(self.outputlog.df_sites['X'], self.outputlog.df_sites['Y'],
+                    marker='o', 
+                    s=32,
+                    color='k')
+        if show_numbering==True:
+            for index, row in self.outputlog.df_sites.iterrows():
+                x = row['X']
+                y = row['Y']
+                ax0.annotate(str(index), xy=(x, y),
+                            xytext=(5, 5),
+                            textcoords='offset points',
+                            fontsize=10)
+        ax0.set_xlabel('$x$')
+        ax0.set_ylabel('$y$')
+        ax0.set_xlim(left=minX-0.2, right=maxX+0.2)
+        ax0.set_ylim(bottom=minY-0.2, top=maxY+0.2)
         ax0.grid(True, linestyle='--', alpha=0.5)
+        ax0.set_aspect('equal')
         return fig0, ax0
     
     def plot_correlations(self):
@@ -66,15 +114,14 @@ class OutputLogPlotter:
         Plot the lattice sites with the correlation data
         """
         if self.outputlog.has_correlations==True:
-            fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8))
-            # plot lattice
-            for index, row in self.outputlog.df_sites.iterrows():
-                ax0.plot(row['X'], row['Y'], 
-                         marker='o', 
-                         markersize=6,
-                         color='k')
-                ax0.set_xlabel('$x$')
-                ax0.set_ylabel('$y$')
+            fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
+            # plot lattice points
+            ax0.scatter(self.outputlog.df_sites['X'], self.outputlog.df_sites['Y'],
+                        marker='o', 
+                        s=32,
+                        color='k')
+            ax0.set_xlabel('$x$')
+            ax0.set_ylabel('$y$')
             
             # plot correlations
             sorted_C = np.sort(self.outputlog.correlations)
@@ -105,7 +152,7 @@ class OutputLogPlotter:
             
             ax0.set_title(titstr)
             ax0.grid(True, linestyle='--', alpha=0.5)
-            ax0.axis('equal')
+            ax0.set_aspect('equal')
         else:
             raise ValueError('Missing correlations data.')
         return fig0, ax0
@@ -119,7 +166,7 @@ class OutputLogPlotter:
         """
         df = self.outputlog.df_mvm_times
         
-        fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8))
+        fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
         ax0.scatter(df.index, df['MVM_TIME'], 
                     color='b', 
                     marker='o',
