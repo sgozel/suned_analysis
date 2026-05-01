@@ -248,18 +248,113 @@ class EDSpectrumCollectionPlotter:
         ax0.grid(True, linestyle='--', alpha=0.5)
         return fig0, ax0
     
-    def plot_tower_of_states(self, target_Jp):
+    '''
+    def plot_tower_of_states_base(self, **kwargs):
+        """
+        Plot the tower of states
+        
+        Parameters
+        ----------
+        figtitle : string
+            figure title
+        show_slope : bool [optional][default: False]
+            plot the slope of the tower of states versus Casimir
+        
+        Returns
+        -------
+        fig, ax : figure handle and axes
+            output figure
+        """
+        
+        show_slope = kwargs.get('show_slope', False)
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
+        colors = iter(cm.rainbow(np.linspace(0, 1, 10)))
+        
+        casimirs = {}
+        casimirs_vec = []
+        
+        for i, data in enumerate(self.spectrumcoll.data):
+            print('Found irrep: ', data['irrep_str'])
+            c = next(colors)
+            gaps_temp = self.spectrumcoll.edspectra[i].gaps
+            lgaps = len(gaps_temp)
+            
+            csi = data['casimir']
+            casimirs_vec.append(csi)
+            if csi in casimirs.keys():
+                casimirs[csi] += int(1)
+            else:
+                casimirs[csi] = int(0)
+            
+            x_temp = (csi + casimirs[csi]*0.05) * np.full(shape=(lgaps,), fill_value=1, dtype=float)
+            
+            ax.scatter(x_temp, gaps_temp, 
+                       marker='o',
+                       color=c)
+        
+        casimirs_vec = np.array(casimirs_vec)
+        
+        if show_slope:
+            
+            ind1 = np.argwhere(casimirs_vec > 0).flatten()
+            ind1_temp = np.argmin(casimirs_vec[ind1])
+            ind1 = ind1[ind1_temp]
+            
+            c1 = casimirs_vec[ind1]
+            gap1 = self.spectrumcoll.edspectra[ind1].gaps[0]
+            slope = gap1 / c1
+            
+            csmax = np.max(casimirs_vec)
+            
+            xfine = np.linspace(0.0, csmax, 300)
+            yfine = slope * xfine
+            
+            ax.plot(xfine, yfine,
+                    linestyle='--',
+                    color='k',
+                    label='Slope: ' + '{:.2f}'.format(slope))
+        
+        ax.set_xlabel('Casimir')
+        ax.set_ylabel('Gap')
+        ax.set_ylim(bottom=-0.1)
+        if 'figtitle' in kwargs:
+            ax.set_title(kwargs['figtitle'])
+        ax.legend(loc='lower right')
+        ax.grid(True, linestyle='--', alpha=0.5)
+        
+        return fig, ax
+    
+    def plot_tower_of_states(self, target_Jp, **kwargs):
         """
         Plot the tower of states for a given Jp value
         
         X axis: quadratic Casimir
         Y axis: Energy gaps
+        
+        Parameters
+        ----------
+        target_Jp : float
+            target value of Jp parameter
+        figtitle : string [optional][default: None]
+            figure title
+        show_slope : bool [optional][default: False]
+            plot the slope of the tower of states versus Casimir
+        
+        Returns
+        -------
+        fig, ax : figure handle and axes
+            output figure
         """
         
-        fig0, ax0 = plt.subplots(figsize=(12, 8))
+        show_slope = kwargs.get('show_slope', False)
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
         colors = iter(cm.rainbow(np.linspace(0, 1, 10)))
         
+        inds = []
         casimirs = {}
+        casimirs_vec = []
         
         print('='*10)
         print('Jp = ', target_Jp)
@@ -269,11 +364,15 @@ class EDSpectrumCollectionPlotter:
             Jpi = data['Jp']
             if (abs(Jpi - target_Jp) < 1.0e-12):
                 print('Found irrep: ', data['irrep_str'])
+                
+                inds.append(i)
+                csi = data['casimir']
+                casimirs_vec.append(csi)
+                
                 c = next(colors)
                 gaps_temp = self.spectrumcoll.edspectra[i].gaps
                 lgaps = len(gaps_temp)
                 
-                csi = data['casimir']
                 if csi in casimirs.keys():
                     casimirs[csi] += int(1)
                 else:
@@ -281,13 +380,149 @@ class EDSpectrumCollectionPlotter:
                 
                 x_temp = (csi + casimirs[csi]*0.05) * np.full(shape=(lgaps,), fill_value=1, dtype=float)
                 
-                ax0.scatter(x_temp, gaps_temp, 
-                            marker='o',
-                            color=c)
+                ax.scatter(x_temp, gaps_temp, 
+                           marker='o',
+                           color=c)
         
-        ax0.set_xlabel('Casimir')
-        ax0.set_ylabel('Gap')
-        ax0.set_title('$J_2 = {0:.2f}$'.format(target_Jp))
-        ax0.set_ylim(bottom=-0.1, top=3.1)
-        ax0.grid(True, linestyle='--', alpha=0.5)
-        return fig0, ax0
+        inds = np.array(inds)
+        casimirs_vec = np.array(casimirs_vec)
+        
+        if show_slope:
+            ind1 = np.argwhere(casimirs_vec > 0).flatten()
+            ind1_temp = np.argmin(casimirs_vec[ind1])
+            ind1l = ind1[ind1_temp]
+            ind1g = inds[ind1][ind1_temp]
+            
+            c1 = casimirs_vec[ind1l]
+            gap1 = self.spectrumcoll.edspectra[ind1g].gaps[0]
+            slope = gap1 / c1
+            
+            csmax = np.max(casimirs_vec)
+            
+            xfine = np.linspace(0.0, csmax, 300)
+            yfine = slope * xfine
+            
+            ax.plot(xfine, yfine,
+                    linestyle='--',
+                    color='k',
+                    label='Slope: ' + '{:.2f}'.format(slope))
+        
+        
+        ax.set_xlabel('Casimir')
+        ax.set_ylabel('Gap')
+        if 'figtitle' in kwargs:
+            ax.set_title(kwargs['figtitle'])
+        ax.set_ylim(bottom=-0.1)
+        ax.legend(loc='lower right')
+        ax.grid(True, linestyle='--', alpha=0.5)
+        
+        return fig, ax
+    '''
+    
+    def plot_tower_of_states(self, **kwargs):
+        """
+        Plot the tower of states for a given Jp value
+        
+        X axis: quadratic Casimir
+        Y axis: Energy gaps
+        
+        Parameters
+        ----------
+        selector : dict
+            selector of data to plot
+        figtitle : string [optional][default: None]
+            figure title
+        show_slope : bool [optional][default: False]
+            plot the slope of the tower of states versus Casimir
+        
+        Returns
+        -------
+        fig, ax : figure handle and axes
+            output figure
+        """
+        
+        selector = kwargs.get('selector', {})
+        show_slope = kwargs.get('show_slope', False)
+        
+        fig, ax = plt.subplots(figsize=(12, 8))
+        colors = iter(cm.rainbow(np.linspace(0, 1, 10)))
+        
+        inds = []
+        casimirs = {}
+        casimirs_vec = []
+        
+        print('='*10)
+        print(selector)
+        print('='*10)
+        
+        tol = 1.0e-12
+        
+        for i, data in enumerate(self.spectrumcoll.data):
+            
+            match = True
+            for key in selector.keys():
+                kval = data[key]
+                if isinstance(kval, float):
+                    if abs( kval - selector[key] ) > tol:
+                        match = False
+                        break
+                else:
+                    if not kval == selector[key]:
+                        match = False
+                        break
+            
+            if match:
+                print('Found irrep: ', data['irrep_str'])
+                
+                inds.append(i)
+                csi = data['casimir']
+                casimirs_vec.append(csi)
+                
+                c = next(colors)
+                gaps_temp = self.spectrumcoll.edspectra[i].gaps
+                lgaps = len(gaps_temp)
+                
+                if csi in casimirs.keys():
+                    casimirs[csi] += int(1)
+                else:
+                    casimirs[csi] = int(0)
+                
+                x_temp = (csi + casimirs[csi]*0.05) * np.full(shape=(lgaps,), fill_value=1, dtype=float)
+                
+                ax.scatter(x_temp, gaps_temp, 
+                           marker='o',
+                           color=c)
+        
+        inds = np.array(inds)
+        casimirs_vec = np.array(casimirs_vec)
+        
+        if show_slope:
+            ind1 = np.argwhere(casimirs_vec > 0).flatten()
+            ind1_temp = np.argmin(casimirs_vec[ind1])
+            ind1l = ind1[ind1_temp]
+            ind1g = inds[ind1][ind1_temp]
+            
+            c1 = casimirs_vec[ind1l]
+            gap1 = self.spectrumcoll.edspectra[ind1g].gaps[0]
+            slope = gap1 / c1
+            
+            csmax = np.max(casimirs_vec)
+            
+            xfine = np.linspace(0.0, csmax, 300)
+            yfine = slope * xfine
+            
+            ax.plot(xfine, yfine,
+                    linestyle='--',
+                    color='k',
+                    label='Slope: ' + '{:.2f}'.format(slope))
+        
+        
+        ax.set_xlabel('Casimir')
+        ax.set_ylabel('Gap')
+        if 'figtitle' in kwargs:
+            ax.set_title(kwargs['figtitle'])
+        ax.set_ylim(bottom=-0.1)
+        ax.legend(loc='lower right')
+        ax.grid(True, linestyle='--', alpha=0.5)
+        
+        return fig, ax
