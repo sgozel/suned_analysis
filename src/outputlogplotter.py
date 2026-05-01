@@ -109,52 +109,120 @@ class OutputLogPlotter:
         ax0.set_aspect('equal')
         return fig0, ax0
     
-    def plot_correlations(self):
+    def plot_correlations(self, **kwargs):
         """
         Plot the lattice sites with the correlation data
+        
+        Parameters
+        ----------
+        add_ghosts : bool [optional][default: False]
+            replicate correlations on ghost sites
+        ms : float [optional][default: 200]
+            marker size
+        show_lattice : bool [optional][default: True]
+            if True, show the lattice
+        bravais_vecs : dict of numpy arrays (keys 'a1', 'a2')
+            Bravais lattice vectors
+            needs to be provided when add_ghosts is set to true
+        simu_torus : dict of numpy arrays (keys 't1', 't2')
+            simulation torus
+            needs to be provided when add_ghosts is set to true
+        replicate_vecs : list of numpy arrays
+            list of replication vectors, in units of t1, t2
         """
-        if self.outputlog.has_correlations==True:
-            fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
+        
+        ms = kwargs.get('ms', 200)
+        add_ghosts = kwargs.get('add_ghosts', False)
+        show_lattice = kwargs.get('show_lattice', True)
+        
+        if add_ghosts:
+            if not 'bravais_vecs' in kwargs:
+                raise RuntimeError('Missing bravais_vecs input argument when adding ghost correlations')
+            else:
+                bravais_vecs = kwargs['bravais_vecs']
+            if not 'simu_torus' in kwargs:
+                raise RuntimeError('Missing simu_torus input argument when adding ghost correlations')
+            else:
+                tb1 = kwargs['simu_torus']['t1']
+                tb2 = kwargs['simu_torus']['t2']
+                t1 = tb1[0] * bravais_vecs['a1'] + tb1[1] * bravais_vecs['a2']
+                t2 = tb2[0] * bravais_vecs['a1'] + tb2[1] * bravais_vecs['a2']
+            if not 'replicate_vecs' in kwargs:
+                vecs = [t1, t2, -t1, -t2,
+                        t1+t2, t1-t2,
+                        -t1+t2, -t1-t2]
+            else:
+                vecs = kwargs['replicate_vecs']
+        
+        if self.outputlog.has_correlations==False:
+            raise ValueError('Missing correlations data.')
+        
+        fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
+        if show_lattice:
             # plot lattice points
             ax0.scatter(self.outputlog.df_sites['X'], self.outputlog.df_sites['Y'],
                         marker='o', 
                         s=32,
                         color='k')
-            ax0.set_xlabel('$x$')
-            ax0.set_ylabel('$y$')
-            
-            # plot correlations
-            sorted_C = np.sort(self.outputlog.correlations)
-            max_C = sorted_C[-2]
-            suN = self.outputlog.metadata['N']
-            for i, C in enumerate(self.outputlog.correlations):
-                C -= 1/suN
-                x_i = self.outputlog.df_sites.iloc[i]['X']
-                y_i = self.outputlog.df_sites.iloc[i]['Y']
-                if C>0:
-                    col_i = 'b'
-                else:
-                    col_i = 'r'
-                if (abs(C + 1/suN - 1) > 1.0e-12):
-                    ax0.scatter(
-                            x_i, y_i,
-                            marker='o',
-                            s=abs(C)/max_C*200,
-                            color=col_i,
-                            facecolor=col_i,
-                            edgecolors='face'
-                    )
-            
-            titstr = '$'
-            for couplingName in self.outputlog.couplings.keys():
-                titstr += couplingName + ' = ' + '{:.2f}'.format(self.outputlog.couplings[couplingName]) + '$, $'
-            titstr = titstr[:-3]
-            
-            ax0.set_title(titstr)
-            ax0.grid(True, linestyle='--', alpha=0.5)
-            ax0.set_aspect('equal')
-        else:
-            raise ValueError('Missing correlations data.')
+        ax0.set_xlabel('$x$')
+        ax0.set_ylabel('$y$')
+        
+        # plot correlations
+        sorted_C = np.sort(self.outputlog.correlations)
+        max_C = sorted_C[-2]
+        suN = self.outputlog.metadata['N']
+        for i, C in enumerate(self.outputlog.correlations):
+            C -= 1/suN
+            x_i = self.outputlog.df_sites.iloc[i]['X']
+            y_i = self.outputlog.df_sites.iloc[i]['Y']
+            if C>0:
+                col_i = 'b'
+            else:
+                col_i = 'r'
+            if (abs(C + 1/suN - 1) > 1.0e-12):
+                ax0.scatter(
+                        x_i, y_i,
+                        marker='o',
+                        s=abs(C)/max_C*ms,
+                        color=col_i,
+                        facecolor=col_i,
+                        edgecolors='face'
+                )
+        
+        if add_ghosts:
+            # plot correlations on ghost sites
+            for vec in vecs:
+                for i, C in enumerate(self.outputlog.correlations):
+                    C -= 1/suN
+                    x_i = self.outputlog.df_sites.iloc[i]['X']
+                    y_i = self.outputlog.df_sites.iloc[i]['Y']
+                    
+                    x_i += vec[0]
+                    y_i += vec[1]
+                    
+                    if C>0:
+                        col_i = 'b'
+                    else:
+                        col_i = 'r'
+                    if (abs(C + 1/suN - 1) > 1.0e-12):
+                        ax0.scatter(
+                                x_i, y_i,
+                                marker='o',
+                                s=abs(C)/max_C*ms,
+                                color=col_i,
+                                facecolor=col_i,
+                                edgecolors='face'
+                        )
+        
+        titstr = '$'
+        for couplingName in self.outputlog.couplings.keys():
+            titstr += couplingName + ' = ' + '{:.2f}'.format(self.outputlog.couplings[couplingName]) + '$, $'
+        titstr = titstr[:-3]
+        
+        ax0.set_title(titstr)
+        ax0.grid(True, linestyle='--', alpha=0.5)
+        ax0.set_aspect('equal')
+        
         return fig0, ax0
     
     def plot_mvm_time(self):
