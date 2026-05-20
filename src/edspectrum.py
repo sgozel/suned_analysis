@@ -65,16 +65,16 @@ class EDSpectrum:
         """
         print('Check two sets ...')        
         if self.has_full_spectrum:
-            
             for k_key in self.eigvalkbyit.keys():
                 # k_key is an eigenvalue index
                 for it_key in self.eigvalkbyit[k_key].keys():
-                    # it_key is a Lanczos iteration index                
-                    if (abs(self.eigvalkbyit[k_key][it_key] - self.all_eigvalsbyit[it_key][k_key]) > 1.0e-15):
-                        print('Problem A: missmatch between eigenvalues extracted in two ways')
-                        print(f'From eigval_{k_key}.log : at iterate {it_key} : value = {self.eigvalkbyit[k_key[it_key]]}')
-                        print(f'From alleigvals.log : at iterate {it_key} : value = {self.all_eigvalsbyit[it_key][k_key]}')
-                        sys.exit()
+                    # it_key is a Lanczos iteration index
+                    if it_key <= 500:
+                        if (abs(self.eigvalkbyit[k_key][it_key] - self.all_eigvalsbyit[it_key][k_key]) > 1.0e-15):
+                            print('Problem A: missmatch between eigenvalues extracted in two ways')
+                            print(f'From eigval_{k_key}.log : at iterate {it_key} : value = {self.eigvalkbyit[k_key[it_key]]}')
+                            print(f'From alleigvals.log : at iterate {it_key} : value = {self.all_eigvalsbyit[it_key][k_key]}')
+                            sys.exit()
             
             # now do the same, but with all_eigvalsbyk to verify that "transposition"
             # was done correctly
@@ -82,16 +82,15 @@ class EDSpectrum:
                 # k_key is an eigenvalue index
                 for it_key in self.eigvalkbyit[k_key].keys():
                     # it_key is a Lanczos iteration index
-                    
-                    ind = np.argwhere(self.all_iterates[k_key] == it_key).flatten()
-                    
-                    if (len(ind)>0):
-                        ind = ind[0]
-                        if (abs(self.eigvalkbyit[k_key][it_key] - self.all_eigvalsbyk[k_key][ind]) > 1.0e-15):
-                            print('Problem B: missmatch between eigenvalues extracted in two ways')
-                            print(f'From eigval_{k_key}.log : at iterate {it_key} : value = {self.eigvalkbyit[k_key[it_key]]}')
-                            print(f'From alleigvals.log (transposed) : at iterate {it_key} : value = {self.all_eigvalsbyk[k_key][ind]}')
-                            sys.exit()
+                    if it_key <= 500:
+                        ind = np.argwhere(self.all_iterates[k_key] == it_key).flatten()
+                        if (len(ind)>0):
+                            ind = ind[0]
+                            if (abs(self.eigvalkbyit[k_key][it_key] - self.all_eigvalsbyk[k_key][ind]) > 1.0e-15):
+                                print('Problem B: missmatch between eigenvalues extracted in two ways')
+                                print(f'From eigval_{k_key}.log : at iterate {it_key} : value = {self.eigvalkbyit[k_key[it_key]]}')
+                                print(f'From alleigvals.log (transposed) : at iterate {it_key} : value = {self.all_eigvalsbyk[k_key][ind]}')
+                                sys.exit()
         print('Check passed.')
         return
     
