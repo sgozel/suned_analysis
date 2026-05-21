@@ -68,11 +68,24 @@ class CounterLog:
         
         # for each file, extract the matrix, and the common max across all files
         self.counts = []
+        self.local_counts = []
+        self.remote_counts = []
         self.common_vmax = 0
         
         for i, filename in enumerate(self.filenames):
-            self.counts.append( np.loadtxt(filename) )
-            self.common_vmax = max(self.common_vmax, self.counts[i].max())
+            
+            counts = np.loadtxt(filename)
+            
+            local  = np.trace(counts)         # local pairs
+            remote = (counts.sum() - local)/2 # remote pairs - divide by 2 to avoid double-counting with friend rank
+            
+            self.counts.append(counts)
+            self.local_counts.append(local)
+            self.remote_counts.append(remote)
+            self.common_vmax = max(self.common_vmax, counts.max())
+        
+        self.local_counts = np.array(self.local_counts)
+        self.remote_counts = np.array(self.remote_counts)
         
         self.nprocs = self.counts[0].shape[0]
         
@@ -122,7 +135,7 @@ class CounterLog:
         
         # Custom colormap: green (0) to dark red (max)
         cmap = mcolors.LinearSegmentedColormap.from_list(
-            "green_to_darkred", ["green", "yellow", "darkred"]
+            'green_to_darkred', ['green', 'yellow', 'darkred']
         )
         
         im = ax.imshow(counts, cmap=cmap, vmin=0, vmax=vmax, aspect="equal")
@@ -185,4 +198,63 @@ class CounterLog:
                                 savefig=savefig)
         
         return
+    
+    
+    def plot_pairs_bar(self, **kwargs):
+        """
+        Plot a stacked bar chart of local and remote pairs for each transposition k
+        
+        Parameters
+        ----------
+        show_values : bool [optional][default: False]
+            if True, print the exact value on each bar segment
+        show_title : bool [optional][default: True]
+            if True, print figure title
+        ax : axes [optional][default: None]
+            axes handles
+        savefig : bool [optional][default: False]
+            if True, save figure to disk
+        """
+        
+        show_values = kwargs.get('show_values', False)
+        show_title = kwargs.get('show_title', True)
+        do_save = kwargs.get('savefig', False)
+        ax = kwargs.get('ax', None)
+        
+        k_values = np.arange(1, self.n-1)
+        
+        fig, ax = (ax.get_figure(), ax) if ax is not None else plt.subplots(figsize=(12, 6))
+    
+        ax.bar(k_values, self.local_counts,
+               label='Local pairs',
+               color='steelblue')
+        ax.bar(k_values, self.remote_counts, 
+               bottom=self.local_counts,
+               label='Remote pairs',
+               color='tomato')
+    
+        if show_values:
+            for i, k in enumerate(k_values):
+                # local value
+                ax.text(k, self.local_counts[i] / 2,
+                        str(int(self.local_counts[i])),
+                        ha='center', va='center', fontsize=7, color='black')
+                # remote value
+                ax.text(k, self.local_counts[i] + self.remote_counts[i] / 2,
+                        str(int(self.remote_counts[i])),
+                        ha='center', va='center', fontsize=7, color='black')
+    
+        ax.set_xlabel('$k$')
+        ax.set_ylabel('Pair count')
+        if show_title:
+            ax.set_title('Local vs Remote pairs per transposition')
+        ax.set_xticks(k_values)
+        ax.legend(loc='lower left')
+        
+        if do_save:
+            fig.savefig(os.path.join(self.folderpath, 'pairs_bar.png'), 
+                        format='png',
+                        dpi=150)
+        
+        return fig, ax
 
