@@ -98,6 +98,8 @@ class RuntimeLog:
             if True, print figure title
         ax : axes [optional][default: None]
             axes handles
+        color : string
+            color
         do_save : bool [optional][default: False]
             if True, save figure to disk
 
@@ -109,6 +111,7 @@ class RuntimeLog:
         
         show_title = kwargs.get('show_title', True)
         do_save = kwargs.get('savefig', False)
+        col = kwargs.get('color', 'k')
         ax = kwargs.get('ax', None)
         
         fig, ax = (ax.get_figure(), ax) if ax is not None else plt.subplots(figsize=(12, 6))
@@ -116,8 +119,8 @@ class RuntimeLog:
         ax.errorbar(self.k_values, self.transpos_means, 
                     yerr=self.transpos_stds,
                     fmt='o',
-                    color='black',
-                    ecolor='black',
+                    color=col,
+                    ecolor=col,
                     elinewidth=1.5,
                     capsize=4,
                     capthick=1.5,
@@ -166,7 +169,7 @@ class RuntimeLog:
         show_title = kwargs.get('show_title', True)
         do_save = kwargs.get('savefig', False)
         ax = kwargs.get('ax', None)
-        col = kwargs.get('col', 'k')
+        col = kwargs.get('color', 'k')
         
         fig, ax = (ax.get_figure(), ax) if ax is not None else plt.subplots(figsize=(12, 6))
         
