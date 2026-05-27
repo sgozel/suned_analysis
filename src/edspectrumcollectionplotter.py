@@ -491,7 +491,8 @@ class EDSpectrumCollectionPlotter:
                 
                 ax.scatter(x_temp, gaps_temp, 
                            marker='o',
-                           color=c)
+                           color=c,
+                           label=data['irrep_str'])
         
         inds = np.array(inds)
         casimirs_vec = np.array(casimirs_vec)
