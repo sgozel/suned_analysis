@@ -42,7 +42,10 @@ class EDSpectrumCollection:
         for i in range(0, len(self.data)):
             print('='*20)
             self.edspectra.append(EDSpectrum(data[i]['folderpath']))
-            self.outputlogs.append(OutputLog(data[i]['outputfile']))
+            self.outputlogs.append(None)
+            if 'outputfile' in data[i].keys():
+                if not data[i]['outputfile'] == '':
+                    self.outputlogs[-1] = OutputLog(data[i]['outputfile'])
         return
     
     def _collect_Jpvec(self):
