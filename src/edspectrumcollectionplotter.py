@@ -221,7 +221,7 @@ class EDSpectrumCollectionPlotter:
         
         # plot
         
-        cols = ['k', 'b', 'r', 'g', 'm']
+        cols = ['k', 'b', 'r', 'g', 'm', 'c', 'y']
         mks = ['o', 's', 'v', 'D', '^', '<', '>']
         ms = 80
         
