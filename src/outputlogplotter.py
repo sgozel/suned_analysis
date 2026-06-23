@@ -121,6 +121,8 @@ class OutputLogPlotter:
             marker size
         show_lattice : bool [optional][default: True]
             if True, show the lattice
+        show_title : bool [optional][default: False]
+            if True, show the figure title
         bravais_vecs : dict of numpy arrays (keys 'a1', 'a2')
             Bravais lattice vectors
             needs to be provided when add_ghosts is set to true
@@ -134,6 +136,7 @@ class OutputLogPlotter:
         ms = kwargs.get('ms', 200)
         add_ghosts = kwargs.get('add_ghosts', False)
         show_lattice = kwargs.get('show_lattice', True)
+        show_title = kwargs.get('show_title', False)
         
         if add_ghosts:
             if not 'bravais_vecs' in kwargs:
@@ -152,12 +155,18 @@ class OutputLogPlotter:
                         t1+t2, t1-t2,
                         -t1+t2, -t1-t2]
             else:
-                vecs = kwargs['replicate_vecs']
+                vecs_tmp = kwargs['replicate_vecs']
+                vecs = []
+                for vec in vecs_tmp:
+                    vecs.append(vec[0] * t1 + vec[1] * t2)
         
         if self.outputlog.has_correlations==False:
             raise ValueError('Missing correlations data.')
         
-        fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
+        #fig0, ax0 = plt.subplots(1, 1, figsize=(7, 8), constrained_layout=True)
+        ax0 = kwargs.get('ax', None)
+        fig0, ax0 = (ax0.get_figure(), ax0) if ax0 is not None else plt.subplots(figsize=(7, 8))
+        
         if show_lattice:
             # plot lattice points
             ax0.scatter(self.outputlog.df_sites['X'], self.outputlog.df_sites['Y'],
@@ -219,7 +228,8 @@ class OutputLogPlotter:
             titstr += couplingName + ' = ' + '{:.2f}'.format(self.outputlog.couplings[couplingName]) + '$, $'
         titstr = titstr[:-3]
         
-        ax0.set_title(titstr)
+        if show_title:
+            ax0.set_title(titstr)
         ax0.grid(True, linestyle='--', alpha=0.5)
         ax0.set_aspect('equal')
         

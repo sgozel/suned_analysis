@@ -165,9 +165,15 @@ class EDSpectrumCollectionPlotter:
         ax0.grid(True, linestyle='--', alpha=0.5)
         return fig0, ax0
     
-    def plot_gaps_all_irreps_vs_Jp(self):
+    def plot_gaps_all_irreps_vs_Jp(self, **kwargs):
         """
         Plot energy gaps of all found irreps vs Jp
+        
+        Parameters
+        ----------
+        ax : axes [optional][default: None]
+            axes handles
+        
         """
         
         # extract all irreps and Jp values
@@ -225,28 +231,31 @@ class EDSpectrumCollectionPlotter:
         mks = ['o', 's', 'v', 'D', '^', '<', '>']
         ms = 80
         
-        fig0, ax0 = plt.subplots(figsize=(12, 8))
+        ax = kwargs.get('ax', None)
+        #fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = (ax.get_figure(), ax) if ax is not None else plt.subplots(figsize=(12, 6))
+        
         for i, irrepkey in enumerate(irreps):
             x = JpByirrep[irrepkey]
             y = gaps[irrepkey]
-            ax0.scatter(x, y[0, :],
+            ax.scatter(x, y[0, :],
                         s=ms,
                         marker=mks[i],
                         color=cols[i],
                         facecolors='none',
                         label=irreps_str[irrepkey])
             for k in range(1, y.shape[0]):
-                ax0.scatter(x, y[k, :],
+                ax.scatter(x, y[k, :],
                             s=ms,
                             marker=mks[i],
                             color=cols[i],
                             facecolors='none')
-        ax0.legend()
-        ax0.set_xlabel('$J_2$')
-        ax0.set_ylabel('Gap')
-        #ax0.set_title()
-        ax0.grid(True, linestyle='--', alpha=0.5)
-        return fig0, ax0
+        ax.legend()
+        ax.set_xlabel('$J_2$')
+        ax.set_ylabel('Gap')
+        #ax.set_title()
+        ax.grid(True, linestyle='--', alpha=0.5)
+        return fig, ax
     
     '''
     def plot_tower_of_states_base(self, **kwargs):
@@ -434,6 +443,8 @@ class EDSpectrumCollectionPlotter:
             figure title
         show_slope : bool [optional][default: False]
             plot the slope of the tower of states versus Casimir
+        ax : axes
+            axes handles
         
         Returns
         -------
@@ -444,7 +455,10 @@ class EDSpectrumCollectionPlotter:
         selector = kwargs.get('selector', {})
         show_slope = kwargs.get('show_slope', False)
         
-        fig, ax = plt.subplots(figsize=(12, 8))
+        ax = kwargs.get('ax', None)
+        fig, ax = (ax.get_figure(), ax) if ax is not None else plt.subplots(figsize=(12, 8))
+        #fig, ax = plt.subplots(figsize=(12, 8))
+        
         colors = iter(cm.rainbow(np.linspace(0, 1, 10)))
         
         inds = []
@@ -515,7 +529,8 @@ class EDSpectrumCollectionPlotter:
             ax.plot(xfine, yfine,
                     linestyle='--',
                     color='k',
-                    label='Slope: ' + '{:.2f}'.format(slope))
+                    #label='Slope: ' + '{:.2f}'.format(slope)
+            )
         
         
         ax.set_xlabel('Casimir')
